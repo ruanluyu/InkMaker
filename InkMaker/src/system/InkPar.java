@@ -1,5 +1,6 @@
 package system;
 
+//一颗安静可爱的粒子的类
 public class InkPar {
 	int x,y;
 	char level;

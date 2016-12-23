@@ -6,35 +6,52 @@ import processing.core.PApplet;
 import processing.core.PImage;
 
 public class InkParSystem {
+	// 下一个粒子不出生的几率
 	float wh = 0.4f;// ratio of happenning//wait
-	final float whf = 0.4f;
+	final float whf = 0.4f;// 默认值
+	// 粒子褪色几率
 	float ldh = 0.3f;// ratio of happenning//level
 	final float ldhf = 0.3f;
+	// 粒子褪色比率
 	float ldd = 0.9f;// ratio of decreasing//level
 	final float lddf = 0.9f;
+	// 最低粒子颜色阈值
 	char minl = 25;
 	final char minlf = 25;
+	// 爸爸妈妈（PApplet类，调用Processing非静态量和函数用）
 	InkMaker parent = null;
+	// 粒子列表
 	ArrayList<InkPar> list = new ArrayList<InkPar>();
+	// 输出图像
 	PImage out = null;
+	// 缓存图像
 	PImage view = null;
+	// 是否要清空粒子列表
 	boolean listClear = false;
+	// 是否要清空缓存图像
 	boolean imageClear = false;
+	// 当前粒子id
 	int curPro;
+	// 当前粒子列表总长度
 	int curSize;
+	// 当前渲染帧的编号
 	int frameId = 0;
+	// 当前帧是否渲染结束
 	boolean over = false;
 
+	// 构造
 	InkParSystem() {
 	}
 
+	// 构造
 	InkParSystem(PImage img, InkMaker parent) {
 		out = img;
 		view = new PImage(img.width, img.height, parent.RGB);
 		this.parent = parent;
-		resetImage();
+		resetImage();// 清空图像
 	}
 
+	// 把输出图像克隆到缓存
 	void copyToView() {
 		view.loadPixels();
 		for (int i = 0; i < view.pixels.length; i++) {
@@ -43,6 +60,7 @@ public class InkParSystem {
 		view.updatePixels();
 	}
 
+	// 清空图像
 	void resetImage() {
 		out.loadPixels();
 		view.loadPixels();
@@ -56,12 +74,14 @@ public class InkParSystem {
 			frameId = 0;
 	}
 
+	// 添加单个点
 	void touch(int x, int y, char level) {
 
 		addPar(new InkPar(x, y, level));
 
 	}
 
+	// 添加一条直线
 	void line(int x, int y, int x2, int y2, char level) {
 		float dis = PApplet.dist(x, y, x2, y2);
 
@@ -71,10 +91,12 @@ public class InkParSystem {
 
 	}
 
+	// 添加粒子
 	void addPar(InkPar par) {
 		list.add(par);
 	}
 
+	// 启动计算线程
 	void updateThread() {
 		new Thread() {
 			@Override
@@ -101,6 +123,7 @@ public class InkParSystem {
 		}.start();
 	}
 
+	// 清空检测
 	private void clearCheck() {
 		if (imageClear) {
 			resetImage();
@@ -113,7 +136,9 @@ public class InkParSystem {
 		}
 	}
 
+	// 计算核心
 	void update() {
+		// 当前粒子对象
 		InkPar curPar = null;
 
 		if (list.size() == 0) {
@@ -124,48 +149,52 @@ public class InkParSystem {
 		curPro = curSize - 1;
 		for (; curPro >= 0; curPro--) {
 			curPar = list.get(curPro);
-			if (curPar == null) {
+			if (curPar == null) {// null检测
 				list.remove(curPro);
 				continue;
 			}
-			if (curPar.level < minl) {
+			if (curPar.level < minl) {// 阈值比较
 				curPar = null;
 				list.remove(curPro);
 				continue;
 			}
 			list.remove(curPro);
-			render(curPar);
-			generate(curPar.x - 1, curPar.y, curPar.level);
-			generate(curPar.x + 1, curPar.y, curPar.level);
-			generate(curPar.x, curPar.y - 1, curPar.level);
-			generate(curPar.x, curPar.y + 1, curPar.level);
+			render(curPar);// 渲染当前点
+			generate(curPar.x - 1, curPar.y, curPar.level);// 向左一像素位置生成一个粒子
+			generate(curPar.x + 1, curPar.y, curPar.level);// 向右一像素位置生成一个粒子
+			generate(curPar.x, curPar.y - 1, curPar.level);// 向上一像素位置生成一个粒子
+			generate(curPar.x, curPar.y + 1, curPar.level);// 向下一像素位置生成一个粒子
 			curPar = null;
 
 		}
+		// 帧id+1
 		frameId++;
 	}
 
+	// 获取相关位置的像素颜色数值
 	char getLevel(int x, int y) {
 		return (char) parent.alpha(out.get(x, y));
 	}
 
+	// 渲染点
 	void render(InkPar t) {
 		out.set(t.x, t.y, parent.color(0, Math.max(t.level, parent.alpha(out.get(t.x, t.y)))));
 	}
 
+	// 生成粒子对象
 	void generate(int x, int y, char level) {
+		//是否可以出生
 		if (Math.random() < wh || !insideScreen(x, y) || getLevel(x, y) >= level) {
 			return;
 		}
-		InkPar ink = new InkPar(x, y, level);
+		
+		//褪色判断
+		addPar(new InkPar(x, y, Math.random() < ldh
+				? (char) (((float) level) * (float) (ldd * parent.random(0.7f, 1f))) : level));
 
-		addPar(ink);
-
-		if (Math.random() < ldh) {
-			ink.level = (char) (((float) ink.level) * (float) (ldd * parent.random(0.7f, 1f)));
-		}
 	}
 
+	// 是否在屏幕里
 	boolean insideScreen(int x, int y) {
 		if (x >= out.width || y >= out.height || x < 0 || y < 0) {
 			return false;
@@ -173,6 +202,7 @@ public class InkParSystem {
 		return true;
 	}
 
+	// 获取整齐含0的帧id
 	String getFrameCount() {
 		int x = frameId;
 		String xs = String.valueOf(x);
