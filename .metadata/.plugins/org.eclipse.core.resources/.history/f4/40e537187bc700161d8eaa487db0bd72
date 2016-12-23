@@ -1,0 +1,132 @@
+package system;
+
+import processing.core.PApplet;
+import processing.core.PVector;
+
+public class InkMaker extends PApplet {
+	InkParSystem ips;
+	int option = 0;
+	boolean recording = false;
+	PVector lastMouse = new PVector(-1, -1);
+	float renderR = 0.0f;
+
+	public static void main(String[] args) {
+		InkMaker soft = new InkMaker();
+		soft.runSketch();
+	}
+
+	public void settings() {
+		size(1280, 720);
+	}
+
+	@Override
+	public void setup() {
+		background(255);
+		size(1280, 720);
+		noStroke();
+		textSize(25);
+		ips = new InkParSystem(createImage(1280, 720, ARGB), this);
+
+		ips.updateThread();
+	}
+
+	public void draw() {
+
+		if (mousePressed) {
+			if (lastMouse.x == -1) {
+				ips.touch(mouseX, mouseY, (char) 255);
+			} else {
+				ips.line(mouseX, mouseY, (int) lastMouse.x, (int) lastMouse.y, (char) 255);
+			}
+			lastMouse.set(mouseX, mouseY);
+		} else {
+			lastMouse.set(-1, -1);
+		}
+		image(ips.view, 0, 0);
+		fill(100, 150);
+		rect(0, 0, width, 120);
+
+		if (ips.list.size() != 0) {
+			renderR = min((float) (1 - (ips.curPro * 1.0) / ips.curSize), 1f);
+		} else {
+			renderR = 1f;
+		}
+
+		fill(255);
+		text("fps : " + round(frameRate), 50, 30);
+		text("parNum : " + ips.list.size(), 200, 30);
+		text("frameCount : " + ips.frameId, 1000, 30);
+		text("Press 's' to stop render, Press 'c' to clear screen,\nPress 'r' to save frames", 50, 70);
+		text("By ZzStarSound", 1080, 110);
+		text("render : " + round(renderR * 100) + "%", 500, 30);
+
+		noFill();
+		stroke(255);
+		rect(700, 20, 100, 5);
+		noStroke();
+		fill(255);
+		rect(700, 20, 100 * renderR, 5);
+
+		if (ips.imageClear) {
+			fill(0, 255, 0);
+			text("ImageClear Waiting", 700, 70);
+		}
+		if (ips.listClear) {
+			fill(0, 255, 0);
+			text("Stop Render Waiting", 1000, 70);
+		}
+
+		if (recording) {
+			fill(0, 255, 255);
+			if (ips.over) {
+				fill(255, 0, 0);
+			}
+			text("Saved " + ips.getFrameCount(), 820, 110);
+			ellipse(1050, 100, 25, 25);
+		}
+
+		if (ips.over) {
+			ips.over = false;
+		}
+
+	}
+
+	void setOption(int mode, char set) {
+		switch (mode) {
+		case 0:
+			ips.wh += set;
+			break;
+		case 1:
+			ips.ldh += set;
+			break;
+		case 2:
+			ips.ldd += set;
+			break;
+			ips.minl += set;
+		case 3:
+			break;
+		}
+	}
+
+	public void keyPressed() {
+		if (key == 'c') {
+			ips.imageClear = true;
+		} else if (key == 's') {
+			ips.listClear = true;
+		} else if (key == 'r') {
+			recording = !recording;
+		}
+		if (keyCode == 38) {
+			option--;
+			if (option < 0)
+				option = 3;
+		} else if (keyCode == 40) {
+			option++;
+			if (option > 3)
+				option = 0;
+		} else if (keyCode == 37) {
+
+		}
+	}
+
+}

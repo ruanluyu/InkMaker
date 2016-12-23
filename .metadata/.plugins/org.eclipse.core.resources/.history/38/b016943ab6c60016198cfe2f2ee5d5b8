@@ -1,0 +1,11 @@
+package system;
+
+public class InkPar {
+	float x,y;
+	char level;
+	InkPar(float x,float y ,char level){
+	  this.x = x;
+	  this.y = y;
+	  this.level = level;
+	}
+}
